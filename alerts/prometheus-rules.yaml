@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prod-rules
+  namespace: monitoring
+  labels:
+    release: obs
+spec:
+  groups:
+  - name: node-health
+    rules:
+    - alert: NodeDiskAlmostFull
+      expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) < 0.10
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Disk almost full"
+        description: "Node {{ $labels.instance }} has <10% disk free for 10m."
+
+    - alert: HighCPU
+      expr: (100 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High CPU usage"
+        description: "CPU >85% for 5m on {{ $labels.instance }}."
+
+  - name: k8s-health
+    rules:
+    - alert: PodCrashLooping
+      expr: increase(kube_pod_container_status_restarts_total[10m]) > 3
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pod crash looping"
+        description: "{{ $labels.namespace }}/{{ $labels.pod }} restarting frequently."
+

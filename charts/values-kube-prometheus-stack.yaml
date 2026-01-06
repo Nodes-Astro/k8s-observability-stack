@@ -1,0 +1,58 @@
+# Release adı: obs (aşağıdaki komutlarda kullanacağız)
+
+grafana:
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: 5Gi
+  service:
+    type: NodePort
+    nodePort: 32000
+prometheus:
+  enabled: true
+  prometheusSpec:
+    retention: 15d
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+# kube-state-metrics: Kubernetes objeleri/state metricleri
+kube-state-metrics:
+  enabled: true
+
+# node-exporter: node seviyesinde CPU/RAM/Disk/Network
+prometheus-node-exporter:
+  enabled: true
+
+# Kubelet scraping (cAdvisor dahil)
+# K3s'te kubelet genelde HTTPS + self-signed/cluster cert ile gelir.
+kubelet:
+  enabled: true
+  serviceMonitor:
+    https: true
+    insecureSkipVerify: true
+
+# Default rule set (prod'da da kullanılır)
+defaultRules:
+  create: true
+
+# Alertmanager istersen şimdilik disable edebilirsin; ama prod'a yakın kalsın diye açık bırakıyorum.
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
