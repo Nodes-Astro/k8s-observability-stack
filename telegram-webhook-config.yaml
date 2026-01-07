@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegram-webhook-app
+  namespace: monitoring
+data:
+  app.py: |
+    import os, requests
+    from flask import Flask, request
+
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    CHAT_ID = os.getenv("CHAT_ID")
+
+    app = Flask(__name__)
+
+    def send_message(text: str):
+      url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+      requests.post(url, json={"chat_id": CHAT_ID, "text": text, "disable_web_page_preview": True}, timeout=10)
+
+    @app.post("/alert")
+    def alert():
+      payload = request.get_json(force=True, silent=True) or {}
+      alerts = payload.get("alerts", [])
+      status = payload.get("status", "unknown").upper()
+
+      if not alerts:
+        send_message("Alertmanager webhook received (no alerts).")
+        return ("ok", 200)
+
+      lines = [f"🚨 ALERTS ({status}) - {len(alerts)}"]
+      for a in alerts[:10]:
+        labels = a.get("labels", {})
+        ann = a.get("annotations", {})
+        sev = labels.get("severity", "n/a")
+        name = labels.get("alertname", "Alert")
+        ns = labels.get("namespace", "")
+        inst = labels.get("instance", labels.get("pod", labels.get("node", "")))
+        summary = ann.get("summary", "")
+        lines.append(f"- [{sev}] {name} ns={ns} inst={inst} | {summary}")
+
+      send_message("\n".join(lines))
+      return ("ok", 200)
+
+    @app.get("/healthz")
+    def healthz():
+      return ("ok", 200)
+
+    if __name__ == "__main__":
+      app.run(host="0.0.0.0", port=8080)

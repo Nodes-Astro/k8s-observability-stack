@@ -1,0 +1,87 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prod-rules
+  namespace: monitoring
+  labels:
+    release: obs
+spec:
+  groups:
+    # -------------------------
+    # Monitoring stack health
+    # -------------------------
+    - name: monitoring.stack.health
+      rules:
+        - alert: PrometheusDown
+          expr: up{job=~".*prometheus.*"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Prometheus is down"
+            description: "Prometheus target is down for more than 2 minutes."
+
+        - alert: NodeExporterDown
+          expr: up{job=~".*node-exporter.*"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node exporter is down"
+            description: "Node exporter has been down for 5 minutes."
+
+    # -------------------------
+    # Node health (VPS)
+    # -------------------------
+    - name: node.health
+      rules:
+        - alert: NodeDiskAlmostFull
+          expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) < 0.10
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node disk almost full"
+            description: "Disk free space is below 10% on {{ $labels.instance }}."
+
+        - alert: HighCPU
+          expr: (100 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage"
+            description: "CPU usage is above 85% for 10 minutes on {{ $labels.instance }}."
+
+        - alert: LowMemory
+          expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.15
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Low available memory"
+            description: "Available memory is below 15% on {{ $labels.instance }}."
+
+    # -------------------------
+    # Kubernetes health
+    # -------------------------
+    - name: k8s.health
+      rules:
+        - alert: NodeNotReady
+          expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kubernetes node not ready"
+            description: "Node {{ $labels.node }} has been NotReady for more than 5 minutes."
+
+        - alert: PodCrashLooping
+          expr: increase(kube_pod_container_status_restarts_total[10m]) > 3
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod crash looping"
+            description: "{{ $labels.namespace }}/{{ $labels.pod }} restarted more than 3 times in 10 minutes."
+

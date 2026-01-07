@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+stringData:
+  alertmanager.yaml: |
+    global: {}
+    route:
+      receiver: telegram
+      group_by: ["alertname", "namespace"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 2h
+    receivers:
+      - name: telegram
+        webhook_configs:
+          - url: http://telegram-webhook.monitoring.svc:8080/alert
+            send_resolved: true

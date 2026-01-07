@@ -49,7 +49,8 @@ defaultRules:
 alertmanager:
   enabled: true
   alertmanagerSpec:
-    storage:
+   configSecret: alertmanager-config
+   storage:
       volumeClaimTemplate:
         spec:
           accessModes: ["ReadWriteOnce"]
