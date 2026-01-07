@@ -137,24 +137,25 @@ rate(container_cpu_usage_seconds_total[2m])
 container_memory_working_set_bytes
 ```
 
-## Future Improvements
+# ✅ Updates: Production Alerts + Telegram Notifications
 
-- Ingress + TLS for Grafana
+This project includes a production-oriented alerting setup and Telegram notifications:
 
-- Slack / Telegram alert routing
+## Alert Rules (PrometheusRule)
+Defined under `alerts/prod-rules.yaml`:
+- **PrometheusDown** (critical)
+- **NodeNotReady** (critical)
+- **NodeDiskAlmostFull** (critical)
+- **PodCrashLooping** (critical)
+- **HighCPU** (warning)
+- **LowMemory** (warning)
+- **NodeExporterDown** (warning)
 
-- GitOps deployment with ArgoCD
+## Telegram Notifications (Alertmanager → Webhook → Telegram)
+Alert notifications are delivered to Telegram using:
+- A lightweight webhook receiver deployed in-cluster (`telegram-webhook-config.yaml`)
+- Alertmanager routing to the webhook (`alertmanager-telegram.yaml`)
+- Credentials stored as Kubernetes Secrets (token/chat_id are **not** committed to Git)
 
-- Multi-node cluster support
+> Note: In production, only actionable alerts should be routed to chat channels to avoid alert fatigue.
 
-## Tech Stack
-
-- Kubernetes (k3s)
-
-- Helm
-
-- Prometheus
-
-- Grafana
-
-- Alertmanager
