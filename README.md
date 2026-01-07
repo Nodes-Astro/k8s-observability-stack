@@ -157,5 +157,8 @@ Alert notifications are delivered to Telegram using:
 - Alertmanager routing to the webhook (`alertmanager-telegram.yaml`)
 - Credentials stored as Kubernetes Secrets (token/chat_id are **not** committed to Git)
 
+<img width="1213" height="977" alt="image" src="https://github.com/user-attachments/assets/bf411a72-c4ff-4737-8c45-09cbcf365329" />
+
+
 > Note: In production, only actionable alerts should be routed to chat channels to avoid alert fatigue.
 
